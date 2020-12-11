@@ -133,19 +133,21 @@ class Chaskey():
         assert len(c) == self.word_len
         return c
 
-    def diff_verify(self, dx, dy, dz):
+   def diff_verify(self, dx, dy, dz):
+        # 输入模加运算的输入输出差分，查表得其差分传递所能导出的约束条件
         # 进位差分
         dc = self.xor(dx, self.xor(dy, dz))
         print('dc  ob {}'.format(dc))
         for i in range(self.word_len - 2, 0, -1):
             check = dz[i + 1] + dy[i + 1] + dx[i + 1] + dz[i] + dy[i] + dx[i] + dc[i - 1]
-            relation = ''
+            relation = []
             if check in self.modadd_table:
                 for j in range(9):
                     if self.modadd_table[check][j] != ' ':
+
                         print(' 第 {} 和 {} 位:{} {} {} --> {}[{}] = {}[{}] + {}'.format(self.word_len - i - 2,
-                                                                                      self.word_len - 1 - i, check[0:3],
-                                                                                      check[3:6], check[6],
+                                                                                      self.word_len - 1 - i,
+                                                                                      check[0:3], check[3:6], check[6],
                                                                                       self.modadd_table['str'][j][0],
                                                                                       self.word_len - i - 2,
                                                                                       self.modadd_table['str'][j][2],
@@ -153,25 +155,33 @@ class Chaskey():
                                                                                       str(self.modadd_table[check][j])))
 
 
-    def test(self):
-        # In = ['0x0C200008', '0x08200008', '0x81008104', '0x81000085']    # 第3轮
+    def read_file(self, filename):
+        f = open(filename, 'r')
+        diff_trail = []
+        for i in f:
+            diff_trail.append(((i.strip()).split()))
+        f.close()
+        assert len(diff_trail) == 9
+        return diff_trail
+
+    def round_verify(self, r, input, output):
+        # In = ['0x0C200008', '0x08200008', '0x81008104', '0x81000085']       # 第3轮
         # Out = ['0x00000000', '0x00000000', '0x80800000', '0x00800000']
-
-        In = ['0x90EA132B', '0x88490EDB', '0x45854D95', '0xE6A41996']       # 第1轮
-        Out = ['0x1AC8DA46', '0x73C0D20A', '0x9282B2A3', '0x02947AA1']
-
+        # In = ['0x90EA132B', '0x88490EDB', '0x45854D95', '0xE6A41996']       # 第1轮
+        # Out = ['0x1AC8DA46', '0x73C0D20A', '0x9282B2A3', '0x02947AA1']
         # In = ['0x1AC8DA46', '0x73C0D20A', '0x9282B2A3', '0x02947AA1']       # 第2轮
         # Out = ['0x0C200008', '0x08200008', '0x81008104', '0x81000085']
-
         # In = ['0x18400010', '0x18C02200', '0x02401001', '0x08421212']       # 第7轮
         # Out = ['0x6A00109B', '0x50B7698C', '0x60001286', '0x68037999']
-
         # In = ['0x6A00109B', '0x50B7698C', '0x60001286', '0x68037999']       # 第8轮
         # Out = ['0x726DC8C0', '0x097D6D14', '0x23822459', '0x2C2329AF']
 
-        for i in range(len(In)):
-            In[i] = self.str2bin(In[i])
-            Out[i] = self.str2bin(Out[i])
+        In = [];
+        Out = []
+        for i in input:
+            In.append(self.str2bin(i))
+        for i in output:
+            Out.append(self.str2bin(i))
 
         # mod_add： A1，A3:x_1,y_1,z_1,u_1,v_1; A2,A4: x_2,y_2,z_2,u_2,v_2
         x_1 = In[0]
@@ -187,7 +197,7 @@ class Chaskey():
         zz_1 = self.rota_l(z_1, 16)
         zz_2 = z_2
 
-        # A1
+        print('Round {}'.format(r))
         for i in range(1, 3):
             exec("print('x_{} ob', x_{})".format(i, i))
             exec("print('y_{} ob', y_{})".format(i, i))
@@ -201,5 +211,7 @@ class Chaskey():
 
 
 if __name__ == '__main__':
-    chaskey = Chaskey(1, 32)
-    chaskey.test()
+    chaskey = Chaskey_diff_verify(1, 32)
+    diff_trail = chaskey.read_file('8_round_diff.txt')
+    for i in range(8):
+        chaskey.round_verify(i, diff_trail[i], diff_trail[i + 1])
